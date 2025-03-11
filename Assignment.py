@@ -28,6 +28,7 @@ number of points is an odd number, the second player wins. In all other cases, t
 
 import random
 
+#Additional software requirements / Generate the numbers for the game
 def set_up():
     length = int(input("Enter the length of the string (15-25): "))
     while length < 15 or length > 25:
@@ -38,10 +39,28 @@ def set_up():
     return numbers
 
 
+# In-game actions
+
+# Add 
+def add_point():
+    return
+
+# Delete
+def delete():
+    return
+
+# AI
+
+
+# Game
+def game():
+    point = 0
+    bank = 0
+    return
 
 def main():
     numbers = set_up()
     print("Generated numbers:", numbers)
 
-
-main()
+if __name__ == "__main__":
+    main()
