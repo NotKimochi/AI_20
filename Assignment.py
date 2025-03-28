@@ -69,15 +69,9 @@ experiment_data = {
         'draws': 0,
         'nodes_visited': [],
         'move_times': []
-    },
-    'random': {
-        'human_wins': 0,
-        'ai_wins': 0,
-        'draws': 0,
-        'nodes_visited': [],
-        'move_times': []
     }
 }
+
 current_experiment = None
 experiment_count = 0
 ai_mode = 'minimax'  # Default AI mode
@@ -372,13 +366,6 @@ class GameState:
             
             return min_eval, best_move
 
-    def random_move(self):
-        """AI makes a random valid move."""
-        possible_moves = self.get_possible_moves()
-        if possible_moves:
-            return random.choice(possible_moves)
-        return None
-
     def ai_move(self):
         """AI makes a move using the current strategy."""
         if self.winner:
@@ -395,9 +382,7 @@ class GameState:
                 if current_move:
                     best_move = current_move
                     self.ai_thoughts.append(f"Depth {depth}: Best move {best_move}")
-        else:  # random mode
-            best_move = self.random_move()
-            self.ai_thoughts.append(f"Random move selected: {best_move}")
+
         
         if best_move:
             move_type, index = best_move
@@ -513,7 +498,7 @@ def run_experiments():
     """Run 10 experiments with each AI algorithm"""
     global current_experiment, experiment_count, ai_mode
     
-    for mode in ['minimax', 'random']:
+    for mode in ['minimax']:
         ai_mode = mode
         current_experiment = True
         experiment_count = 0
@@ -578,12 +563,6 @@ while running:
 
         if event.type == pygame.MOUSEBUTTONDOWN:
             x, y = pygame.mouse.get_pos()
-            
-            # Handle AI mode toggle
-            if WIDTH - 150 <= x <= WIDTH - 10 and HEIGHT - 50 <= y <= HEIGHT - 10:
-                ai_mode = 'random' if ai_mode == 'minimax' else 'minimax'
-                print(f"AI mode switched to {ai_mode}")
-                continue
             
             # Handle restart button click
             if game_state.winner and \
