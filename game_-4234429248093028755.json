@@ -1,0 +1,33 @@
+{
+  "move": null,
+  "state": {
+    "numbers": [
+      4,
+      3,
+      5,
+      1,
+      6,
+      5,
+      3,
+      5,
+      1,
+      2,
+      5,
+      4,
+      2,
+      1,
+      6,
+      3,
+      4,
+      1,
+      2,
+      5
+    ],
+    "points": 0,
+    "winner": null
+  },
+  "heuristic": 0,
+  "depth": 0,
+  "children_count": 0,
+  "children": []
+}
