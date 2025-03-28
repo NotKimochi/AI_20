@@ -28,8 +28,13 @@ number of points is an odd number, the second player wins. In all other cases, t
 
 import pygame
 import random
-import time
+import json
+from datetime import datetime
 from copy import deepcopy
+import math
+import os
+import time
+from collections import defaultdict
 
 # Initialize pygame
 pygame.init()
@@ -48,12 +53,158 @@ COLORS = {
     'purple': (128, 0, 128)
 }
 
-# Pygame setup
+# Initialize screen
 screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
 pygame.display.set_caption("Number Merging Game")
 
+# Font setup
 font = pygame.font.Font(None, 36)
 small_font = pygame.font.Font(None, 24)
+
+# Experiment tracking
+experiment_data = {
+    'minimax': {
+        'human_wins': 0,
+        'ai_wins': 0,
+        'draws': 0,
+        'nodes_visited': [],
+        'move_times': []
+    },
+    'random': {
+        'human_wins': 0,
+        'ai_wins': 0,
+        'draws': 0,
+        'nodes_visited': [],
+        'move_times': []
+    }
+}
+current_experiment = None
+experiment_count = 0
+ai_mode = 'minimax'  # Default AI mode
+
+class ExperimentTracker:
+    def __init__(self):
+        self.nodes_visited = 0
+        self.move_start_time = 0
+        self.move_times = []
+    
+    def start_move(self):
+        self.nodes_visited = 0
+        self.move_start_time = time.time()
+    
+    def end_move(self):
+        elapsed = time.time() - self.move_start_time
+        self.move_times.append(elapsed)
+        return elapsed
+    
+    def record_node(self):
+        self.nodes_visited += 1
+
+tracker = ExperimentTracker()
+
+class GameNode:
+    """Class to represent nodes in the game tree"""
+    def __init__(self, move=None, state=None, parent=None):
+        self.move = move  # (action, index)
+        self.state = state  # GameState snapshot
+        self.parent = parent
+        self.children = []
+        self.depth = parent.depth + 1 if parent else 0
+        self.heuristic = 0
+
+    def to_dict(self):
+        """Convert node to dictionary for storage"""
+        return {
+            'move': self.move,
+            'state': {
+                'numbers': self.state.numbers_list if self.state else [],
+                'points': self.state.total_points if self.state else 0,
+                'winner': self.state.winner if self.state else None
+            },
+            'heuristic': self.heuristic,
+            'depth': self.depth,
+            'children_count': len(self.children)
+        }
+
+class GameTree:
+    """Class to manage the game tree storage"""
+    def __init__(self):
+        self.root = None
+        self.current_node = None
+        self.game_id = None
+        self.initial_state_hash = None
+    
+    def start_new_game(self, initial_state):
+        """Initialize tree with starting state"""
+        # Create hash of initial state for filename
+        self.initial_state_hash = hash(tuple(initial_state.numbers_list))
+        self.game_id = f"game_{self.initial_state_hash}"
+        
+        # Try to load existing tree
+        filename = f"{self.game_id}.json"
+        try:
+            with open(filename, 'r') as f:
+                tree_data = json.load(f)
+                self.root = self._dict_to_node(tree_data)
+                self.current_node = self.root
+                print(f"Loaded existing game tree from {filename}")
+        except (FileNotFoundError, json.JSONDecodeError):
+            self.root = GameNode(state=initial_state.clone())
+            self.current_node = self.root
+            print(f"Created new game tree {filename}")
+
+    def _dict_to_node(self, node_dict):
+        """Recursively convert dictionary to node"""
+        if not node_dict:
+            return None
+            
+        node = GameNode(
+            move=node_dict['move'],
+            state=GameState(
+                node_dict['state']['points'],
+                node_dict['state']['numbers']
+            ),
+            parent=None
+        )
+        node.heuristic = node_dict['heuristic']
+        node.depth = node_dict['depth']
+        
+        # Rebuild children recursively
+        node.children = [self._dict_to_node(child) for child in node_dict['children']]
+        for child in node.children:
+            child.parent = node
+            
+        return node
+
+    def add_node(self, move, state):
+        """Add a new node to the tree"""
+        if not self.current_node:
+            return
+        
+        new_node = GameNode(move=move, state=state.clone(), parent=self.current_node)
+        self.current_node.children.append(new_node)
+        self.current_node = new_node
+    
+    def save_tree(self):
+        """Save the game tree to a JSON file"""
+        if not self.root:
+            return
+        
+        filename = f"{self.game_id}.json"
+        tree_dict = self._node_to_dict(self.root)
+        
+        with open(filename, 'w') as f:
+            json.dump(tree_dict, f, indent=2)
+        print(f"Game tree saved to {filename}")
+    
+    def _node_to_dict(self, node):
+        """Recursively convert tree to dictionary"""
+        if not node:
+            return None
+        
+        node_dict = node.to_dict()
+        node_dict['children'] = [self._node_to_dict(child) for child in node.children]
+        return node_dict
 
 class GameState:
     def __init__(self, total_points, numbers_list):
@@ -63,65 +214,14 @@ class GameState:
         self.winner = None
         self.last_move_details = []
         self.ai_thoughts = []
+        self.starting_player = 1  # 1 for human, 2 for AI
 
     def clone(self):
         """Create a deep copy of the current state."""
-        return GameState(self.total_points, self.numbers_list.copy())
-
-    def evaluate_heuristic(self):
-        """Improved heuristic that values both merges and strategic removals"""
-        self.ai_thoughts = []
-        score = 0
-        
-        # Base score from points
-        points_score = 2 * self.total_points
-        score += points_score
-        self.ai_thoughts.append(f"Base points: {points_score}")
-        
-        # Value having options
-        possible_moves = len(self.get_possible_moves())
-        options_score = 1 * possible_moves
-        score += options_score
-        self.ai_thoughts.append(f"Move options: {options_score} ({possible_moves} moves available)")
-        
-        # Parity strategy
-        parity_importance = 1 + (10 / len(self.numbers_list))
-        parity_match = sum(1 for num in self.numbers_list 
-                         if num % 2 == self.total_points % 2)
-        parity_score = parity_importance * parity_match
-        score += parity_score
-        self.ai_thoughts.append(f"Parity match: {parity_score:.1f} ({parity_match} numbers match current parity)")
-        
-        # Removal bonus calculation
-        removal_bonus = 0
-        for i in range(len(self.numbers_list)):
-            temp_state = self.clone()
-            temp_state.make_move(i, "remove")
-            new_parity = sum(1 for num in temp_state.numbers_list
-                           if num % 2 == temp_state.total_points % 2)
-            if new_parity > parity_match:
-                removal_bonus += 2
-                self.ai_thoughts.append(f"Good removal at {i} would improve parity")
-        score += removal_bonus
-        
-        # Terminal state evaluation
-        if len(self.numbers_list) == 1:
-            final_num = self.numbers_list[0]
-            if (final_num % 2) == (self.total_points % 2):
-                term_score = 100 if (final_num % 2 == 0) else 80
-                score += term_score
-                self.ai_thoughts.append(f"Terminal win score: +{term_score}")
-            else:
-                score -= 100
-                self.ai_thoughts.append("Terminal lose score: -100")
-        
-        # Progress penalty
-        progress_penalty = 0.5 * len(self.numbers_list)
-        score -= progress_penalty
-        self.ai_thoughts.append(f"Progress penalty: -{progress_penalty:.1f} ({len(self.numbers_list)} numbers)")
-        
-        self.ai_thoughts.append(f"TOTAL SCORE: {score:.1f}")
-        return score
+        new_state = GameState(self.total_points, self.numbers_list.copy())
+        new_state.winner = self.winner
+        new_state.starting_player = self.starting_player
+        return new_state
 
     def make_move(self, index, move_type):
         """Execute a move and return a description."""
@@ -132,7 +232,7 @@ class GameState:
         details = []
         if move_type == "merge" and index < len(self.numbers_list) - 1:
             num1, num2 = self.numbers_list[index], self.numbers_list[index + 1]
-            new_sum = (num1 + num2) if (num1 + num2) <= 6 else (num1 + num2 - 6)
+            new_sum = (num1 + num2) % 6 or 6  # Handles wrap-around (7=1, 8=2, etc.)
             self.numbers_list[index] = new_sum
             del self.numbers_list[index + 1]
             self.total_points += 1
@@ -157,9 +257,21 @@ class GameState:
             ]
         
         self.check_winner()
-        self.last_ai_move = description
         self.last_move_details = details
         return description
+
+    def check_winner(self):
+        """Determine the winner when one number remains."""
+        if len(self.numbers_list) == 1:
+            final_num = self.numbers_list[0]
+            if (final_num % 2 == self.total_points % 2):
+                if (final_num % 2 == 0 and self.starting_player == 1) or \
+                   (final_num % 2 == 1 and self.starting_player == 2):
+                    self.winner = "Player Wins!"
+                else:
+                    self.winner = "AI Wins!"
+            else:
+                self.winner = "It's a Draw!"
 
     def get_possible_moves(self):
         """Return all valid moves as (move_type, index) pairs."""
@@ -173,22 +285,66 @@ class GameState:
         
         # All possible removes
         for i in range(len(self.numbers_list)):
-            moves.append(("remove", i))
+            # Prevent removing the last number (game would end)
+            if len(self.numbers_list) > 1:
+                moves.append(("remove", i))
         
         return moves
 
-    def minimax(self, depth, maximizing_player, alpha=float('-inf'), beta=float('inf')):
+    def evaluate_heuristic(self):
+        """Heuristic evaluation of the board state"""
+        self.ai_thoughts = []
+        score = 0
+        
+        # Terminal state evaluation
+        if len(self.numbers_list) == 1:
+            final_num = self.numbers_list[0]
+            if (final_num % 2 == self.total_points % 2):
+                if (final_num % 2 == 0 and self.starting_player == 1) or \
+                   (final_num % 2 == 1 and self.starting_player == 2):
+                    score += 1000  # AI wins
+                    self.ai_thoughts.append("Terminal state: AI wins!")
+                else:
+                    score -= 1000  # Player wins
+                    self.ai_thoughts.append("Terminal state: Player wins!")
+            else:
+                score = 0  # Draw
+                self.ai_thoughts.append("Terminal state: Draw")
+            return score
+        
+        # Points score (positive is good for AI)
+        score += 2 * self.total_points
+        self.ai_thoughts.append(f"Points score: {2 * self.total_points}")
+        
+        # Number of possible moves (more options is better)
+        possible_moves = len(self.get_possible_moves())
+        score += 0.5 * possible_moves
+        self.ai_thoughts.append(f"Move options: {0.5 * possible_moves}")
+        
+        # Parity strategy
+        current_parity = self.total_points % 2
+        matching_numbers = sum(1 for num in self.numbers_list if num % 2 == current_parity)
+        parity_score = 1.5 * matching_numbers
+        score += parity_score
+        self.ai_thoughts.append(f"Parity score: {parity_score} ({matching_numbers} matching)")
+        
+        self.ai_thoughts.append(f"Total heuristic score: {score}")
+        return score
+
+    def minimax(self, depth, alpha, beta, maximizing_player):
         """Minimax algorithm with alpha-beta pruning."""
+        tracker.record_node()  # Track nodes visited
+        
         if depth == 0 or self.winner:
             return self.evaluate_heuristic(), None
         
         best_move = None
         if maximizing_player:
-            max_eval = float('-inf')
+            max_eval = -math.inf
             for move in self.get_possible_moves():
                 new_state = self.clone()
                 new_state.make_move(move[1], move[0])
-                evaluation, _ = new_state.minimax(depth-1, False, alpha, beta)
+                evaluation, _ = new_state.minimax(depth-1, alpha, beta, False)
                 
                 if evaluation > max_eval:
                     max_eval = evaluation
@@ -200,11 +356,11 @@ class GameState:
             
             return max_eval, best_move
         else:
-            min_eval = float('inf')
+            min_eval = math.inf
             for move in self.get_possible_moves():
                 new_state = self.clone()
                 new_state.make_move(move[1], move[0])
-                evaluation, _ = new_state.minimax(depth-1, True, alpha, beta)
+                evaluation, _ = new_state.minimax(depth-1, alpha, beta, True)
                 
                 if evaluation < min_eval:
                     min_eval = evaluation
@@ -216,49 +372,46 @@ class GameState:
             
             return min_eval, best_move
 
+    def random_move(self):
+        """AI makes a random valid move."""
+        possible_moves = self.get_possible_moves()
+        if possible_moves:
+            return random.choice(possible_moves)
+        return None
+
     def ai_move(self):
-        """Improved AI that considers both merges and removes strategically."""
+        """AI makes a move using the current strategy."""
         if self.winner:
             return
         
         self.ai_thoughts = ["AI is thinking..."]
+        tracker.start_move()  # Start tracking this move
         
-        # First check if any remove would immediately win the game
-        for i in range(len(self.numbers_list)):
-            temp_state = self.clone()
-            temp_state.make_move(i, "remove")
-            if temp_state.winner and "AI Wins" in temp_state.winner:
-                self.ai_thoughts.append(f"Found winning removal at position {i}!")
-                self.make_move(i, "remove")
-                return
-        
-        # Otherwise use minimax with depth 3
-        self.ai_thoughts.append("Evaluating possible moves...")
-        _, best_move = self.minimax(3, True)
+        if ai_mode == 'minimax':
+            # Use iterative deepening for better move selection
+            best_move = None
+            for depth in range(1, 5):  # Search up to depth 4
+                _, current_move = self.minimax(depth, -math.inf, math.inf, True)
+                if current_move:
+                    best_move = current_move
+                    self.ai_thoughts.append(f"Depth {depth}: Best move {best_move}")
+        else:  # random mode
+            best_move = self.random_move()
+            self.ai_thoughts.append(f"Random move selected: {best_move}")
         
         if best_move:
             move_type, index = best_move
-            self.ai_thoughts.append(f"Best move: {move_type} at {index}")
+            self.ai_thoughts.append(f"Selected move: {move_type} at {index}")
             self.make_move(index, move_type)
-
-    def check_winner(self):
-        """Determine the winner when one number remains."""
-        if len(self.numbers_list) == 1:
-            final_num = self.numbers_list[0]
-            if final_num % 2 == self.total_points % 2:
-                self.winner = "Player Wins!" if final_num % 2 == 0 else "AI Wins!"
-            else:
-                self.winner = "It's a Draw!"
-
-# Initialize the game
-initial_length = random.randint(15, 25)
-starting_numbers = [random.randint(1, 6) for _ in range(initial_length)]
-game_state = GameState(total_points=0, numbers_list=starting_numbers)
-player_turn = True
-selected_index = None
+            self.last_ai_move = f"AI did: {move_type} at position {index}"
+            
+            # Record move metrics
+            elapsed = tracker.end_move()
+            self.ai_thoughts.append(f"Nodes visited: {tracker.nodes_visited}")
+            self.ai_thoughts.append(f"Time taken: {elapsed:.3f}s")
 
 def draw_game():
-    """Draw the game state on the screen."""
+    """Draw the game state on the screen (without tree visualization)"""
     screen.fill(COLORS['white'])
     
     # Draw numbers board
@@ -298,20 +451,104 @@ def draw_game():
             detail_text = small_font.render(detail, True, COLORS['purple'])
             screen.blit(detail_text, (20, 90 + i * 20))
 
-    # AI thinking process
-    if not player_turn and game_state.ai_thoughts:
-        pygame.draw.rect(screen, COLORS['black'], (WIDTH - 300, 60, 290, 80), 1)
-        for i, thought in enumerate(game_state.ai_thoughts[-3:]):  # Show last 3 thoughts
-            thought_text = small_font.render(thought, True, COLORS['blue'])
-            screen.blit(thought_text, (WIDTH - 290, 70 + i * 20))
-
     # Action buttons
     pygame.draw.rect(screen, COLORS['red'], (WIDTH // 2 - 100, HEIGHT - 100, 80, 40))
     pygame.draw.rect(screen, COLORS['green'], (WIDTH // 2 + 20, HEIGHT - 100, 80, 40))
     screen.blit(font.render("Remove", True, COLORS['white']), (WIDTH // 2 - 90, HEIGHT - 90))
     screen.blit(font.render("Merge", True, COLORS['white']), (WIDTH // 2 + 30, HEIGHT - 90))
 
+    # Restart button (visible when game ends)
+    if game_state.winner:
+        pygame.draw.rect(screen, COLORS['purple'], (WIDTH // 2 - 60, HEIGHT - 50, 120, 40))
+        screen.blit(font.render("Restart", True, COLORS['white']), (WIDTH // 2 - 50, HEIGHT - 40))
+        
+        # Show experiment status if running
+        if current_experiment:
+            exp_text = font.render(f"Experiment {experiment_count}/10 ({ai_mode})", True, COLORS['black'])
+            screen.blit(exp_text, (WIDTH // 2 - 100, HEIGHT - 150))
+
+    # AI mode toggle button
+    pygame.draw.rect(screen, COLORS['orange'], (WIDTH - 150, HEIGHT - 50, 140, 40))
+    mode_text = font.render(f"AI: {ai_mode}", True, COLORS['white'])
+    screen.blit(mode_text, (WIDTH - 140, HEIGHT - 40))
+
     pygame.display.flip()
+
+def initialize_game():
+    """Initialize a new game"""
+    global game_state, player_turn, selected_index, game_tree
+    
+    initial_length = random.randint(15, 25)
+    starting_numbers = [random.randint(1, 6) for _ in range(initial_length)]
+    game_state = GameState(total_points=0, numbers_list=starting_numbers)
+    player_turn = True  # Player goes first
+    selected_index = None
+    
+    # Initialize game tree
+    game_tree.start_new_game(game_state)
+
+def record_experiment_result():
+    """Record the outcome of a game in the experiment data"""
+    if not current_experiment:
+        return
+    
+    if game_state.winner == "Player Wins!":
+        experiment_data[ai_mode]['human_wins'] += 1
+    elif game_state.winner == "AI Wins!":
+        experiment_data[ai_mode]['ai_wins'] += 1
+    else:
+        experiment_data[ai_mode]['draws'] += 1
+    
+    # Record nodes visited and move times
+    if tracker.nodes_visited > 0:
+        experiment_data[ai_mode]['nodes_visited'].append(tracker.nodes_visited)
+    if tracker.move_times:
+        experiment_data[ai_mode]['move_times'].extend(tracker.move_times)
+    
+    # Reset tracker for next game
+    tracker.nodes_visited = 0
+    tracker.move_times = []
+
+def run_experiments():
+    """Run 10 experiments with each AI algorithm"""
+    global current_experiment, experiment_count, ai_mode
+    
+    for mode in ['minimax', 'random']:
+        ai_mode = mode
+        current_experiment = True
+        experiment_count = 0
+        
+        for _ in range(10):
+            experiment_count += 1
+            initialize_game()
+            
+            # Run the game (this would need to be automated)
+            # In a real implementation, we'd automate the player moves too
+            # For now, we'll just track the AI moves when they happen
+            
+            # Wait for game to end (handled in main loop)
+            while not game_state.winner:
+                pygame.time.delay(100)
+            
+            record_experiment_result()
+        
+        current_experiment = False
+    
+    # Print experiment results
+    print("\nExperiment Results:")
+    for mode, data in experiment_data.items():
+        print(f"\n{mode} AI:")
+        print(f"  Human wins: {data['human_wins']}")
+        print(f"  AI wins: {data['ai_wins']}")
+        print(f"  Draws: {data['draws']}")
+        if data['nodes_visited']:
+            print(f"  Avg nodes visited: {sum(data['nodes_visited'])/len(data['nodes_visited']):.1f}")
+        if data['move_times']:
+            print(f"  Avg move time: {sum(data['move_times'])/len(data['move_times']):.3f}s")
+
+# Initialize the game and tree
+game_tree = GameTree()
+initialize_game()
 
 running = True
 while running:
@@ -321,37 +558,91 @@ while running:
     if not player_turn and not game_state.winner:
         pygame.time.delay(500)  # Small delay so player can see AI's move
         game_state.ai_move()
+        
+        # Record AI move in game tree
+        if game_state.last_ai_move:
+            last_action = game_state.last_move_details[0].split(":")[0].lower()
+            last_index = int(game_state.last_move_details[0].split(":")[1].strip())
+            game_tree.add_node((last_action, last_index), game_state)
+        
         player_turn = True
 
     for event in pygame.event.get():
         if event.type == pygame.QUIT:
+            game_tree.save_tree()  # Save tree before quitting
             running = False
         
         if event.type == pygame.VIDEORESIZE:
             WIDTH, HEIGHT = event.w, event.h
             screen = pygame.display.set_mode((WIDTH, HEIGHT), pygame.RESIZABLE)
 
-        if event.type == pygame.MOUSEBUTTONDOWN and player_turn and not game_state.winner:
+        if event.type == pygame.MOUSEBUTTONDOWN:
             x, y = pygame.mouse.get_pos()
+            
+            # Handle AI mode toggle
+            if WIDTH - 150 <= x <= WIDTH - 10 and HEIGHT - 50 <= y <= HEIGHT - 10:
+                ai_mode = 'random' if ai_mode == 'minimax' else 'minimax'
+                print(f"AI mode switched to {ai_mode}")
+                continue
+            
+            # Handle restart button click
+            if game_state.winner and \
+               WIDTH // 2 - 60 <= x <= WIDTH // 2 + 60 and \
+               HEIGHT - 50 <= y <= HEIGHT - 10:
+                if current_experiment:
+                    record_experiment_result()
+                game_tree.save_tree()  # Save current tree
+                initialize_game()  # Start new game
+                continue
+            
+            # Handle experiment start
+            if not current_experiment and \
+               WIDTH // 2 - 100 <= x <= WIDTH // 2 + 100 and \
+               HEIGHT - 150 <= y <= HEIGHT - 110:
+                run_experiments()
+                continue
+            
+            if player_turn and not game_state.winner:
+                # Select a number
+                button_spacing = min(BUTTON_SIZE, (screen.get_width() - 2*PADDING) // max(1, len(game_state.numbers_list)))
+                for i in range(len(game_state.numbers_list)):
+                    btn_x = PADDING + i * button_spacing
+                    btn_y = HEIGHT // 2
+                    if btn_x <= x <= btn_x + BUTTON_SIZE and btn_y <= y <= btn_y + BUTTON_SIZE:
+                        selected_index = i
 
-            # Select a number
-            button_spacing = min(BUTTON_SIZE, (screen.get_width() - 2*PADDING) // max(1, len(game_state.numbers_list)))
-            for i in range(len(game_state.numbers_list)):
-                btn_x = PADDING + i * button_spacing
-                btn_y = HEIGHT // 2
-                if btn_x <= x <= btn_x + BUTTON_SIZE and btn_y <= y <= btn_y + BUTTON_SIZE:
-                    selected_index = i
+                # Check action buttons
+                if selected_index is not None:
+                    # Remove action
+                    if WIDTH // 2 - 100 <= x <= WIDTH // 2 - 20 and HEIGHT - 100 <= y <= HEIGHT - 60:
+                        if len(game_state.numbers_list) > 1:  # Prevent removing last number
+                            prev_state = game_state.clone()
+                            game_state.make_move(selected_index, "remove")
+                            player_turn = False
+                            # Record move in game tree
+                            game_tree.add_node(("remove", selected_index), prev_state)
+                            selected_index = None
 
-            # Check action buttons
-            if selected_index is not None:
-                if WIDTH // 2 - 100 <= x <= WIDTH // 2 - 20 and HEIGHT - 100 <= y <= HEIGHT - 60:
-                    game_state.make_move(selected_index, "remove")
-                    player_turn = False
-                    selected_index = None
-
-                elif WIDTH // 2 + 20 <= x <= WIDTH // 2 + 100 and HEIGHT - 100 <= y <= HEIGHT - 60:
-                    game_state.make_move(selected_index, "merge")
-                    player_turn = False
-                    selected_index = None
+                    # Merge action
+                    elif WIDTH // 2 + 20 <= x <= WIDTH // 2 + 100 and HEIGHT - 100 <= y <= HEIGHT - 60:
+                        if selected_index < len(game_state.numbers_list) - 1:  # Must have pair
+                            prev_state = game_state.clone()
+                            game_state.make_move(selected_index, "merge")
+                            player_turn = False
+                            # Record move in game tree
+                            game_tree.add_node(("merge", selected_index), prev_state)
+                            selected_index = None
 
 pygame.quit()
+
+# After quitting, print final experiment results
+print("\nFinal Experiment Results:")
+for mode, data in experiment_data.items():
+    print(f"\n{mode} AI:")
+    print(f"  Human wins: {data['human_wins']}")
+    print(f"  AI wins: {data['ai_wins']}")
+    print(f"  Draws: {data['draws']}")
+    if data['nodes_visited']:
+        print(f"  Avg nodes visited: {sum(data['nodes_visited'])/len(data['nodes_visited']):.1f}")
+    if data['move_times']:
+        print(f"  Avg move time: {sum(data['move_times'])/len(data['move_times']):.3f}s")
