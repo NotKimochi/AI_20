@@ -61,40 +61,7 @@ pygame.display.set_caption("Number Merging Game")
 font = pygame.font.Font(None, 36)
 small_font = pygame.font.Font(None, 24)
 
-# Experiment tracking
-experiment_data = {
-    'minimax': {
-        'human_wins': 0,
-        'ai_wins': 0,
-        'draws': 0,
-        'nodes_visited': [],
-        'move_times': []
-    }
-}
-
-current_experiment = None
-experiment_count = 0
 ai_mode = 'minimax'  # Default AI mode
-
-class ExperimentTracker:
-    def __init__(self):
-        self.nodes_visited = 0
-        self.move_start_time = 0
-        self.move_times = []
-    
-    def start_move(self):
-        self.nodes_visited = 0
-        self.move_start_time = time.time()
-    
-    def end_move(self):
-        elapsed = time.time() - self.move_start_time
-        self.move_times.append(elapsed)
-        return elapsed
-    
-    def record_node(self):
-        self.nodes_visited += 1
-
-tracker = ExperimentTracker()
 
 class GameNode:
     """Class to represent nodes in the game tree"""
@@ -327,8 +294,6 @@ class GameState:
 
     def minimax(self, depth, alpha, beta, maximizing_player):
         """Minimax algorithm with alpha-beta pruning."""
-        tracker.record_node()  # Track nodes visited
-        
         if depth == 0 or self.winner:
             return self.evaluate_heuristic(), None
         
@@ -372,7 +337,6 @@ class GameState:
             return
         
         self.ai_thoughts = ["AI is thinking..."]
-        tracker.start_move()  # Start tracking this move
         
         if ai_mode == 'minimax':
             # Use iterative deepening for better move selection
@@ -389,11 +353,6 @@ class GameState:
             self.ai_thoughts.append(f"Selected move: {move_type} at {index}")
             self.make_move(index, move_type)
             self.last_ai_move = f"AI did: {move_type} at position {index}"
-            
-            # Record move metrics
-            elapsed = tracker.end_move()
-            self.ai_thoughts.append(f"Nodes visited: {tracker.nodes_visited}")
-            self.ai_thoughts.append(f"Time taken: {elapsed:.3f}s")
 
 def draw_game():
     """Draw the game state on the screen (without tree visualization)"""
@@ -446,11 +405,6 @@ def draw_game():
     if game_state.winner:
         pygame.draw.rect(screen, COLORS['purple'], (WIDTH // 2 - 60, HEIGHT - 50, 120, 40))
         screen.blit(font.render("Restart", True, COLORS['white']), (WIDTH // 2 - 50, HEIGHT - 40))
-        
-        # Show experiment status if running
-        if current_experiment:
-            exp_text = font.render(f"Experiment {experiment_count}/10 ({ai_mode})", True, COLORS['black'])
-            screen.blit(exp_text, (WIDTH // 2 - 100, HEIGHT - 150))
 
     # AI mode toggle button
     pygame.draw.rect(screen, COLORS['orange'], (WIDTH - 150, HEIGHT - 50, 140, 40))
@@ -471,65 +425,6 @@ def initialize_game():
     
     # Initialize game tree
     game_tree.start_new_game(game_state)
-
-def record_experiment_result():
-    """Record the outcome of a game in the experiment data"""
-    if not current_experiment:
-        return
-    
-    if game_state.winner == "Player Wins!":
-        experiment_data[ai_mode]['human_wins'] += 1
-    elif game_state.winner == "AI Wins!":
-        experiment_data[ai_mode]['ai_wins'] += 1
-    else:
-        experiment_data[ai_mode]['draws'] += 1
-    
-    # Record nodes visited and move times
-    if tracker.nodes_visited > 0:
-        experiment_data[ai_mode]['nodes_visited'].append(tracker.nodes_visited)
-    if tracker.move_times:
-        experiment_data[ai_mode]['move_times'].extend(tracker.move_times)
-    
-    # Reset tracker for next game
-    tracker.nodes_visited = 0
-    tracker.move_times = []
-
-def run_experiments():
-    """Run 10 experiments with each AI algorithm"""
-    global current_experiment, experiment_count, ai_mode
-    
-    for mode in ['minimax']:
-        ai_mode = mode
-        current_experiment = True
-        experiment_count = 0
-        
-        for _ in range(10):
-            experiment_count += 1
-            initialize_game()
-            
-            # Run the game (this would need to be automated)
-            # In a real implementation, we'd automate the player moves too
-            # For now, we'll just track the AI moves when they happen
-            
-            # Wait for game to end (handled in main loop)
-            while not game_state.winner:
-                pygame.time.delay(100)
-            
-            record_experiment_result()
-        
-        current_experiment = False
-    
-    # Print experiment results
-    print("\nExperiment Results:")
-    for mode, data in experiment_data.items():
-        print(f"\n{mode} AI:")
-        print(f"  Human wins: {data['human_wins']}")
-        print(f"  AI wins: {data['ai_wins']}")
-        print(f"  Draws: {data['draws']}")
-        if data['nodes_visited']:
-            print(f"  Avg nodes visited: {sum(data['nodes_visited'])/len(data['nodes_visited']):.1f}")
-        if data['move_times']:
-            print(f"  Avg move time: {sum(data['move_times'])/len(data['move_times']):.3f}s")
 
 # Initialize the game and tree
 game_tree = GameTree()
@@ -568,17 +463,8 @@ while running:
             if game_state.winner and \
                WIDTH // 2 - 60 <= x <= WIDTH // 2 + 60 and \
                HEIGHT - 50 <= y <= HEIGHT - 10:
-                if current_experiment:
-                    record_experiment_result()
                 game_tree.save_tree()  # Save current tree
                 initialize_game()  # Start new game
-                continue
-            
-            # Handle experiment start
-            if not current_experiment and \
-               WIDTH // 2 - 100 <= x <= WIDTH // 2 + 100 and \
-               HEIGHT - 150 <= y <= HEIGHT - 110:
-                run_experiments()
                 continue
             
             if player_turn and not game_state.winner:
@@ -613,15 +499,3 @@ while running:
                             selected_index = None
 
 pygame.quit()
-
-# After quitting, print final experiment results
-print("\nFinal Experiment Results:")
-for mode, data in experiment_data.items():
-    print(f"\n{mode} AI:")
-    print(f"  Human wins: {data['human_wins']}")
-    print(f"  AI wins: {data['ai_wins']}")
-    print(f"  Draws: {data['draws']}")
-    if data['nodes_visited']:
-        print(f"  Avg nodes visited: {sum(data['nodes_visited'])/len(data['nodes_visited']):.1f}")
-    if data['move_times']:
-        print(f"  Avg move time: {sum(data['move_times'])/len(data['move_times']):.3f}s")

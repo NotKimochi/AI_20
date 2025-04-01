@@ -1,0 +1,716 @@
+{
+  "move": null,
+  "state": {
+    "numbers": [
+      2,
+      1,
+      6,
+      5,
+      4,
+      3,
+      2,
+      6,
+      3,
+      5,
+      6,
+      2,
+      4,
+      4,
+      6,
+      3,
+      1,
+      2,
+      6,
+      2,
+      2,
+      2,
+      1,
+      1
+    ],
+    "points": 0,
+    "winner": null
+  },
+  "heuristic": 0,
+  "depth": 0,
+  "children_count": 1,
+  "children": [
+    {
+      "move": [
+        "merge",
+        14
+      ],
+      "state": {
+        "numbers": [
+          2,
+          1,
+          6,
+          5,
+          4,
+          3,
+          2,
+          6,
+          3,
+          5,
+          6,
+          2,
+          4,
+          4,
+          6,
+          3,
+          1,
+          2,
+          6,
+          2,
+          2,
+          2,
+          1,
+          1
+        ],
+        "points": 0,
+        "winner": null
+      },
+      "heuristic": 0,
+      "depth": 1,
+      "children_count": 1,
+      "children": [
+        {
+          "move": [
+            "position",
+            0
+          ],
+          "state": {
+            "numbers": [
+              3,
+              6,
+              5,
+              4,
+              3,
+              2,
+              6,
+              3,
+              5,
+              6,
+              2,
+              4,
+              4,
+              3,
+              1,
+              2,
+              6,
+              2,
+              2,
+              2,
+              1,
+              1
+            ],
+            "points": 2,
+            "winner": null
+          },
+          "heuristic": 0,
+          "depth": 2,
+          "children_count": 1,
+          "children": [
+            {
+              "move": [
+                "merge",
+                17
+              ],
+              "state": {
+                "numbers": [
+                  3,
+                  6,
+                  5,
+                  4,
+                  3,
+                  2,
+                  6,
+                  3,
+                  5,
+                  6,
+                  2,
+                  4,
+                  4,
+                  3,
+                  1,
+                  2,
+                  6,
+                  2,
+                  2,
+                  2,
+                  1,
+                  1
+                ],
+                "points": 2,
+                "winner": null
+              },
+              "heuristic": 0,
+              "depth": 3,
+              "children_count": 1,
+              "children": [
+                {
+                  "move": [
+                    "position",
+                    0
+                  ],
+                  "state": {
+                    "numbers": [
+                      3,
+                      5,
+                      4,
+                      3,
+                      2,
+                      6,
+                      3,
+                      5,
+                      6,
+                      2,
+                      4,
+                      4,
+                      3,
+                      1,
+                      2,
+                      6,
+                      4,
+                      2,
+                      1,
+                      1
+                    ],
+                    "points": 4,
+                    "winner": null
+                  },
+                  "heuristic": 0,
+                  "depth": 4,
+                  "children_count": 1,
+                  "children": [
+                    {
+                      "move": [
+                        "remove",
+                        2
+                      ],
+                      "state": {
+                        "numbers": [
+                          3,
+                          5,
+                          4,
+                          3,
+                          2,
+                          6,
+                          3,
+                          5,
+                          6,
+                          2,
+                          4,
+                          4,
+                          3,
+                          1,
+                          2,
+                          6,
+                          4,
+                          2,
+                          1,
+                          1
+                        ],
+                        "points": 4,
+                        "winner": null
+                      },
+                      "heuristic": 0,
+                      "depth": 5,
+                      "children_count": 1,
+                      "children": [
+                        {
+                          "move": [
+                            "position",
+                            2
+                          ],
+                          "state": {
+                            "numbers": [
+                              3,
+                              5,
+                              5,
+                              6,
+                              3,
+                              5,
+                              6,
+                              2,
+                              4,
+                              4,
+                              3,
+                              1,
+                              2,
+                              6,
+                              4,
+                              2,
+                              1,
+                              1
+                            ],
+                            "points": 4,
+                            "winner": null
+                          },
+                          "heuristic": 0,
+                          "depth": 6,
+                          "children_count": 1,
+                          "children": [
+                            {
+                              "move": [
+                                "merge",
+                                2
+                              ],
+                              "state": {
+                                "numbers": [
+                                  3,
+                                  5,
+                                  5,
+                                  6,
+                                  3,
+                                  5,
+                                  6,
+                                  2,
+                                  4,
+                                  4,
+                                  3,
+                                  1,
+                                  2,
+                                  6,
+                                  4,
+                                  2,
+                                  1,
+                                  1
+                                ],
+                                "points": 4,
+                                "winner": null
+                              },
+                              "heuristic": 0,
+                              "depth": 7,
+                              "children_count": 1,
+                              "children": [
+                                {
+                                  "move": [
+                                    "position",
+                                    4
+                                  ],
+                                  "state": {
+                                    "numbers": [
+                                      3,
+                                      5,
+                                      5,
+                                      3,
+                                      5,
+                                      2,
+                                      4,
+                                      4,
+                                      3,
+                                      1,
+                                      2,
+                                      6,
+                                      4,
+                                      2,
+                                      1,
+                                      1
+                                    ],
+                                    "points": 6,
+                                    "winner": null
+                                  },
+                                  "heuristic": 0,
+                                  "depth": 8,
+                                  "children_count": 1,
+                                  "children": [
+                                    {
+                                      "move": [
+                                        "merge",
+                                        4
+                                      ],
+                                      "state": {
+                                        "numbers": [
+                                          3,
+                                          5,
+                                          5,
+                                          3,
+                                          5,
+                                          2,
+                                          4,
+                                          4,
+                                          3,
+                                          1,
+                                          2,
+                                          6,
+                                          4,
+                                          2,
+                                          1,
+                                          1
+                                        ],
+                                        "points": 6,
+                                        "winner": null
+                                      },
+                                      "heuristic": 0,
+                                      "depth": 9,
+                                      "children_count": 1,
+                                      "children": [
+                                        {
+                                          "move": [
+                                            "position",
+                                            4
+                                          ],
+                                          "state": {
+                                            "numbers": [
+                                              3,
+                                              5,
+                                              5,
+                                              3,
+                                              5,
+                                              4,
+                                              3,
+                                              1,
+                                              2,
+                                              6,
+                                              4,
+                                              2,
+                                              1,
+                                              1
+                                            ],
+                                            "points": 8,
+                                            "winner": null
+                                          },
+                                          "heuristic": 0,
+                                          "depth": 10,
+                                          "children_count": 1,
+                                          "children": [
+                                            {
+                                              "move": [
+                                                "merge",
+                                                3
+                                              ],
+                                              "state": {
+                                                "numbers": [
+                                                  3,
+                                                  5,
+                                                  5,
+                                                  3,
+                                                  5,
+                                                  4,
+                                                  3,
+                                                  1,
+                                                  2,
+                                                  6,
+                                                  4,
+                                                  2,
+                                                  1,
+                                                  1
+                                                ],
+                                                "points": 8,
+                                                "winner": null
+                                              },
+                                              "heuristic": 0,
+                                              "depth": 11,
+                                              "children_count": 1,
+                                              "children": [
+                                                {
+                                                  "move": [
+                                                    "position",
+                                                    2
+                                                  ],
+                                                  "state": {
+                                                    "numbers": [
+                                                      3,
+                                                      5,
+                                                      1,
+                                                      4,
+                                                      3,
+                                                      1,
+                                                      2,
+                                                      6,
+                                                      4,
+                                                      2,
+                                                      1,
+                                                      1
+                                                    ],
+                                                    "points": 10,
+                                                    "winner": null
+                                                  },
+                                                  "heuristic": 0,
+                                                  "depth": 12,
+                                                  "children_count": 1,
+                                                  "children": [
+                                                    {
+                                                      "move": [
+                                                        "remove",
+                                                        2
+                                                      ],
+                                                      "state": {
+                                                        "numbers": [
+                                                          3,
+                                                          5,
+                                                          1,
+                                                          4,
+                                                          3,
+                                                          1,
+                                                          2,
+                                                          6,
+                                                          4,
+                                                          2,
+                                                          1,
+                                                          1
+                                                        ],
+                                                        "points": 10,
+                                                        "winner": null
+                                                      },
+                                                      "heuristic": 0,
+                                                      "depth": 13,
+                                                      "children_count": 1,
+                                                      "children": [
+                                                        {
+                                                          "move": [
+                                                            "position",
+                                                            1
+                                                          ],
+                                                          "state": {
+                                                            "numbers": [
+                                                              3,
+                                                              3,
+                                                              3,
+                                                              1,
+                                                              2,
+                                                              6,
+                                                              4,
+                                                              2,
+                                                              1,
+                                                              1
+                                                            ],
+                                                            "points": 10,
+                                                            "winner": null
+                                                          },
+                                                          "heuristic": 0,
+                                                          "depth": 14,
+                                                          "children_count": 1,
+                                                          "children": [
+                                                            {
+                                                              "move": [
+                                                                "merge",
+                                                                5
+                                                              ],
+                                                              "state": {
+                                                                "numbers": [
+                                                                  3,
+                                                                  3,
+                                                                  3,
+                                                                  1,
+                                                                  2,
+                                                                  6,
+                                                                  4,
+                                                                  2,
+                                                                  1,
+                                                                  1
+                                                                ],
+                                                                "points": 10,
+                                                                "winner": null
+                                                              },
+                                                              "heuristic": 0,
+                                                              "depth": 15,
+                                                              "children_count": 1,
+                                                              "children": [
+                                                                {
+                                                                  "move": [
+                                                                    "position",
+                                                                    3
+                                                                  ],
+                                                                  "state": {
+                                                                    "numbers": [
+                                                                      3,
+                                                                      3,
+                                                                      3,
+                                                                      3,
+                                                                      4,
+                                                                      2,
+                                                                      1,
+                                                                      1
+                                                                    ],
+                                                                    "points": 12,
+                                                                    "winner": null
+                                                                  },
+                                                                  "heuristic": 0,
+                                                                  "depth": 16,
+                                                                  "children_count": 1,
+                                                                  "children": [
+                                                                    {
+                                                                      "move": [
+                                                                        "remove",
+                                                                        1
+                                                                      ],
+                                                                      "state": {
+                                                                        "numbers": [
+                                                                          3,
+                                                                          3,
+                                                                          3,
+                                                                          3,
+                                                                          4,
+                                                                          2,
+                                                                          1,
+                                                                          1
+                                                                        ],
+                                                                        "points": 12,
+                                                                        "winner": null
+                                                                      },
+                                                                      "heuristic": 0,
+                                                                      "depth": 17,
+                                                                      "children_count": 1,
+                                                                      "children": [
+                                                                        {
+                                                                          "move": [
+                                                                            "position",
+                                                                            2
+                                                                          ],
+                                                                          "state": {
+                                                                            "numbers": [
+                                                                              3,
+                                                                              3,
+                                                                              1,
+                                                                              2,
+                                                                              1,
+                                                                              1
+                                                                            ],
+                                                                            "points": 12,
+                                                                            "winner": null
+                                                                          },
+                                                                          "heuristic": 0,
+                                                                          "depth": 18,
+                                                                          "children_count": 1,
+                                                                          "children": [
+                                                                            {
+                                                                              "move": [
+                                                                                "remove",
+                                                                                1
+                                                                              ],
+                                                                              "state": {
+                                                                                "numbers": [
+                                                                                  3,
+                                                                                  3,
+                                                                                  1,
+                                                                                  2,
+                                                                                  1,
+                                                                                  1
+                                                                                ],
+                                                                                "points": 12,
+                                                                                "winner": null
+                                                                              },
+                                                                              "heuristic": 0,
+                                                                              "depth": 19,
+                                                                              "children_count": 1,
+                                                                              "children": [
+                                                                                {
+                                                                                  "move": [
+                                                                                    "position",
+                                                                                    0
+                                                                                  ],
+                                                                                  "state": {
+                                                                                    "numbers": [
+                                                                                      4,
+                                                                                      2,
+                                                                                      1,
+                                                                                      1
+                                                                                    ],
+                                                                                    "points": 12,
+                                                                                    "winner": null
+                                                                                  },
+                                                                                  "heuristic": 0,
+                                                                                  "depth": 20,
+                                                                                  "children_count": 1,
+                                                                                  "children": [
+                                                                                    {
+                                                                                      "move": [
+                                                                                        "remove",
+                                                                                        1
+                                                                                      ],
+                                                                                      "state": {
+                                                                                        "numbers": [
+                                                                                          4,
+                                                                                          2,
+                                                                                          1,
+                                                                                          1
+                                                                                        ],
+                                                                                        "points": 12,
+                                                                                        "winner": null
+                                                                                      },
+                                                                                      "heuristic": 0,
+                                                                                      "depth": 21,
+                                                                                      "children_count": 1,
+                                                                                      "children": [
+                                                                                        {
+                                                                                          "move": [
+                                                                                            "position",
+                                                                                            1
+                                                                                          ],
+                                                                                          "state": {
+                                                                                            "numbers": [
+                                                                                              4,
+                                                                                              2
+                                                                                            ],
+                                                                                            "points": 12,
+                                                                                            "winner": null
+                                                                                          },
+                                                                                          "heuristic": 0,
+                                                                                          "depth": 22,
+                                                                                          "children_count": 1,
+                                                                                          "children": [
+                                                                                            {
+                                                                                              "move": [
+                                                                                                "remove",
+                                                                                                1
+                                                                                              ],
+                                                                                              "state": {
+                                                                                                "numbers": [
+                                                                                                  4,
+                                                                                                  2
+                                                                                                ],
+                                                                                                "points": 12,
+                                                                                                "winner": null
+                                                                                              },
+                                                                                              "heuristic": 0,
+                                                                                              "depth": 23,
+                                                                                              "children_count": 0,
+                                                                                              "children": []
+                                                                                            }
+                                                                                          ]
+                                                                                        }
+                                                                                      ]
+                                                                                    }
+                                                                                  ]
+                                                                                }
+                                                                              ]
+                                                                            }
+                                                                          ]
+                                                                        }
+                                                                      ]
+                                                                    }
+                                                                  ]
+                                                                }
+                                                              ]
+                                                            }
+                                                          ]
+                                                        }
+                                                      ]
+                                                    }
+                                                  ]
+                                                }
+                                              ]
+                                            }
+                                          ]
+                                        }
+                                      ]
+                                    }
+                                  ]
+                                }
+                              ]
+                            }
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ]
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}
